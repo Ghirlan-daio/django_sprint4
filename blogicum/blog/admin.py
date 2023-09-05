@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Category, Location, Post
+from .models import Category, Comment, Location, Post
 
 
 class PostInline(admin.StackedInline):
@@ -39,4 +39,5 @@ class CategoryAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Location)
+admin.site.register(Comment)
 admin.site.empty_value_display = 'Не задано'
