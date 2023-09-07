@@ -5,14 +5,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
 from django.db.models import Count
-from django.http import Http404
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from .forms import CommentForm, PostForm, UserForm
 
-POSTS_ON_THE_PAGE = 10
+POSTS_ON_THE_PAGE: int = 10
 
 
 class PostListView(ListView):
@@ -59,7 +59,7 @@ class PostDetailView(DetailView):
         return context
 
 
-def category_posts(request, category_slug):
+def category_posts(request: HttpRequest, category_slug: str) -> HttpResponse:
     """
     Страница публикаций по
     выбранной категории.
@@ -86,39 +86,45 @@ def category_posts(request, category_slug):
     return render(request, 'blog/category.html', context)
 
 
-class ProfileDetailView(LoginRequiredMixin, DetailView):
+class ProfileListView(ListView):
     """
     Страница профиля пользователя.
     """
-    model = User
     template_name = 'blog/profile.html'
-    slug_url_kwarg = 'username'
-    slug_field = 'username'
+    paginate_by = POSTS_ON_THE_PAGE
+
+    def get_queryset(self):
+        self.user = get_object_or_404(
+            User, username=self.kwargs['username']
+        )
+        if self.user == self.request.user:
+            return (
+                Post.objects.select_related(
+                    'category', 'location', 'author'
+                ).filter(author=self.user).annotate(
+                    comment_count=Count('comments')
+                ).order_by('-pub_date')
+            )
+        return (
+            Post.objects.select_related(
+                'category', 'location', 'author'
+            ).filter(
+                pub_date__date__lt=datetime.now(timezone.utc),
+                is_published=True,
+                category__is_published=True
+            ).annotate(
+                comment_count=Count('comments')
+            ).order_by('-pub_date')
+        )
 
     def get_context_data(self, **kwargs):
-        user = self.get_object()
         context = super().get_context_data(**kwargs)
-        context['profile'] = self.object
-        posts_user = self.object.authors.select_related(
-            'location', 'author', 'category'
-            ).order_by('-pub_date').annotate(
-                comment_count=Count('comments')
-            )
-        if user != self.request.user:
-            posts_user = posts_user.filter(
-                is_published=True,
-                pub_date__date__lt=datetime.now(timezone.utc),
-                category__is_published=True
-            )
-        paginator = Paginator(posts_user, POSTS_ON_THE_PAGE)
-        page_number = self.request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-        context['page_obj'] = page_obj
-        context['user'] = self.request.user
+        context['profile'] = self.user
+        context['user'] = self.user
         return context
 
 
-class ProfileUpdateView(UpdateView):
+class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     """
     Страница редактирования
     профиля пользователя.
@@ -148,7 +154,7 @@ class PostMixin:
 
 class PostCreateView(LoginRequiredMixin, PostMixin, CreateView):
     """
-    Добавление новой публикации.
+    Добавление публикации.
     """
     def get_success_url(self):
         return reverse_lazy(
@@ -162,7 +168,7 @@ class PostCreateView(LoginRequiredMixin, PostMixin, CreateView):
 
 class PostUpdateView(LoginRequiredMixin, PostMixin, UpdateView):
     """
-    Редактирование выбранной публикации.
+    Редактирование публикации.
     """
     def dispatch(self, request, *args, **kwargs):
         instance = get_object_or_404(Post, pk=kwargs['pk'])
@@ -172,9 +178,9 @@ class PostUpdateView(LoginRequiredMixin, PostMixin, UpdateView):
 
 
 @login_required
-def delete_post(request, pk):
+def delete_post(request: HttpRequest, pk: int) -> HttpResponse:
     """
-    Удаление выбранной публикации.
+    Удаление публикации.
     """
     instance = get_object_or_404(Post, pk=pk, author=request.user)
     form = PostForm(instance=instance)
@@ -188,7 +194,7 @@ def delete_post(request, pk):
 
 
 @login_required
-def add_comment(request, pk):
+def add_comment(request: HttpRequest, pk: int) -> HttpResponse:
     """
     Добавление комментария.
     """
@@ -203,7 +209,9 @@ def add_comment(request, pk):
 
 
 @login_required
-def edit_comment(request, pk, comment_id):
+def edit_comment(
+    request: HttpRequest, pk: int, comment_id: int
+) -> HttpResponse:
     """
     Редактирование комментария.
     """
@@ -226,7 +234,9 @@ def edit_comment(request, pk, comment_id):
 
 
 @login_required
-def delete_comment(request, pk, comment_id):
+def delete_comment(
+    request: HttpRequest, pk: int, comment_id: int
+) -> HttpResponse:
     """
     Удаление комментария.
     """
