@@ -22,13 +22,13 @@ urlpatterns = [
     ),
     path('posts/<int:pk>/delete/', views.delete_post, name='delete_post'),
     path(
-        'profile/edit/',
+        'profile/edit/<username>/',
         views.ProfileUpdateView.as_view(),
         name='edit_profile'
     ),
     path(
-        'profile/<slug:username>/',
-        views.ProfileDetailView.as_view(),
+        'profile/<username>/',
+        views.ProfileListView.as_view(),
         name='profile'
     ),
     path(
