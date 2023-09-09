@@ -1,11 +1,12 @@
 from django.contrib import admin
 
+from .constants import EXTRA_VALUE
 from .models import Category, Comment, Location, Post
 
 
 class PostInline(admin.StackedInline):
     model = Post
-    extra = 0
+    extra = EXTRA_VALUE
 
 
 @admin.register(Post)
@@ -38,6 +39,33 @@ class CategoryAdmin(admin.ModelAdmin):
     )
 
 
-admin.site.register(Location)
-admin.site.register(Comment)
+@admin.register(Location)
+class LocationAdmin(admin.ModelAdmin):
+    inlines = (
+        PostInline,
+    )
+    list_display = (
+        'name',
+        'created_at',
+        'is_published'
+    )
+    list_editable = (
+        'is_published',
+    )
+    search_fields = ('name',)
+    list_filter = ('created_at',)
+
+
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    list_display = (
+        'text',
+        'post',
+        'author',
+        'created_at'
+    )
+    search_fields = ('author',)
+    list_filter = ('created_at',)
+
+
 admin.site.empty_value_display = 'Не задано'

@@ -3,19 +3,13 @@ from django import forms
 from .models import Comment, Post, User
 
 
-class FormCleanMixin:
+class PostForm(forms.ModelForm):
     """
-    Миксин для очистки
-    данных из форм.
+    Форма для добавления новых публикаций.
     """
     def clean(self):
         super().clean()
 
-
-class PostForm(FormCleanMixin, forms.ModelForm):
-    """
-    Форма для добавления новых публикаций.
-    """
     class Meta:
         model = Post
         exclude = (
@@ -26,10 +20,13 @@ class PostForm(FormCleanMixin, forms.ModelForm):
         }
 
 
-class UserForm(FormCleanMixin, forms.ModelForm):
+class UserForm(forms.ModelForm):
     """
     Форма для редактирования профиля.
     """
+    def clean(self):
+        super().clean()
+
     class Meta:
         model = User
         fields = (
@@ -40,10 +37,13 @@ class UserForm(FormCleanMixin, forms.ModelForm):
         )
 
 
-class CommentForm(FormCleanMixin, forms.ModelForm):
+class CommentForm(forms.ModelForm):
     """
     Форма для отправки комментариев.
     """
+    def clean(self):
+        super().clean()
+
     class Meta:
         model = Comment
         fields = ('text',)

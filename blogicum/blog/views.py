@@ -1,18 +1,17 @@
 from datetime import datetime, timezone
 
-from blog.models import Category, Comment, Post, User
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.paginator import Paginator
 from django.db.models import Count
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
+from utils import paginate_page, query_select_related, queryset_filter
 
+from .constants import POSTS_ON_THE_PAGE
 from .forms import CommentForm, PostForm, UserForm
-
-POSTS_ON_THE_PAGE: int = 10
+from .models import Category, Comment, Post, User
 
 
 class PostListView(ListView):
@@ -20,17 +19,7 @@ class PostListView(ListView):
     Список публикаций пользователей
     на главной странице.
     """
-    queryset = Post.objects.select_related(
-        'category',
-        'author',
-        'location'
-    ).filter(
-        pub_date__date__lt=datetime.now(timezone.utc),
-        is_published=True,
-        category__is_published=True
-    ).annotate(
-        comment_count=Count('comments')
-    ).order_by('-pub_date')
+    queryset = queryset_filter(query_select_related())
     paginate_by = POSTS_ON_THE_PAGE
     template_name = 'blog/index.html'
 
@@ -69,19 +58,13 @@ def category_posts(request: HttpRequest, category_slug: str) -> HttpResponse:
         is_published=True,
         slug=category_slug
     )
-    post_list = category.categories.filter(
-        is_published=True,
-        pub_date__date__lt=datetime.now(timezone.utc)
-    ).annotate(
-        comment_count=Count('comments')
-    ).order_by('-pub_date')
-    paginator = Paginator(post_list, POSTS_ON_THE_PAGE)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    post_list = queryset_filter(
+        category.posts_category
+    )
     context = {
         'category': category,
         'post_list': post_list,
-        'page_obj': page_obj
+        'page_obj': paginate_page(request, post_list, POSTS_ON_THE_PAGE)
     }
     return render(request, 'blog/category.html', context)
 
@@ -105,17 +88,7 @@ class ProfileListView(ListView):
                     comment_count=Count('comments')
                 ).order_by('-pub_date')
             )
-        return (
-            Post.objects.select_related(
-                'category', 'location', 'author'
-            ).filter(
-                pub_date__date__lt=datetime.now(timezone.utc),
-                is_published=True,
-                category__is_published=True
-            ).annotate(
-                comment_count=Count('comments')
-            ).order_by('-pub_date')
-        )
+        return queryset_filter(query_select_related())
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

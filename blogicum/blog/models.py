@@ -3,6 +3,8 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.urls import reverse
 
+from .constants import MAX_FIELD_LENGTH
+
 User = get_user_model()
 
 
@@ -12,7 +14,7 @@ class Category(DateTimeModel, PublishedModel):
     Содержит данные о
     категориях публикаций.
     """
-    title = models.CharField('Заголовок', max_length=256)
+    title = models.CharField('Заголовок', max_length=MAX_FIELD_LENGTH)
     description = models.TextField('Описание')
     slug = models.SlugField(
         'Идентификатор',
@@ -34,7 +36,7 @@ class Location(DateTimeModel, PublishedModel):
     Содержит данные о локациях
     сделанных публикаций.
     """
-    name = models.CharField('Название места', max_length=256)
+    name = models.CharField('Название места', max_length=MAX_FIELD_LENGTH)
 
     class Meta:
         verbose_name = 'местоположение'
@@ -50,7 +52,7 @@ class Post(DateTimeModel, PublishedModel):
     Содержит данные
     добавленных публикаций.
     """
-    title = models.CharField('Заголовок', max_length=256)
+    title = models.CharField('Заголовок', max_length=MAX_FIELD_LENGTH)
     text = models.TextField('Текст')
     pub_date = models.DateTimeField(
         'Дата и время публикации',
@@ -60,7 +62,7 @@ class Post(DateTimeModel, PublishedModel):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='authors',
+        related_name='posts_author',
         verbose_name='Автор публикации'
     )
     category = models.ForeignKey(
@@ -68,7 +70,7 @@ class Post(DateTimeModel, PublishedModel):
         on_delete=models.SET_NULL,
         blank=False,
         null=True,
-        related_name='categories',
+        related_name='posts_category',
         verbose_name='Категория'
     )
     location = models.ForeignKey(
@@ -76,7 +78,7 @@ class Post(DateTimeModel, PublishedModel):
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        related_name='locations',
+        related_name='posts_location',
         verbose_name='Местоположение',
     )
     image = models.ImageField(
