@@ -62,7 +62,7 @@ class Post(DateTimeModel, PublishedModel):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='posts_author',
+        related_name='posts',
         verbose_name='Автор публикации'
     )
     category = models.ForeignKey(
@@ -70,7 +70,7 @@ class Post(DateTimeModel, PublishedModel):
         on_delete=models.SET_NULL,
         blank=False,
         null=True,
-        related_name='posts_category',
+        related_name='posts',
         verbose_name='Категория'
     )
     location = models.ForeignKey(
@@ -78,7 +78,7 @@ class Post(DateTimeModel, PublishedModel):
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        related_name='posts_location',
+        related_name='posts',
         verbose_name='Местоположение',
     )
     image = models.ImageField(

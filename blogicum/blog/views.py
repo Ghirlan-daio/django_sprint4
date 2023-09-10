@@ -19,9 +19,11 @@ class PostListView(ListView):
     Список публикаций пользователей
     на главной странице.
     """
-    queryset = queryset_filter(query_select_related())
     paginate_by = POSTS_ON_THE_PAGE
     template_name = 'blog/index.html'
+
+    def get_queryset(self):
+        return queryset_filter(query_select_related())
 
 
 class PostDetailView(DetailView):
@@ -59,7 +61,7 @@ def category_posts(request: HttpRequest, category_slug: str) -> HttpResponse:
         slug=category_slug
     )
     post_list = queryset_filter(
-        category.posts_category
+        category.posts
     )
     context = {
         'category': category,
